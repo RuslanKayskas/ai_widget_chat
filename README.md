@@ -1,220 +1,158 @@
-Vue 3 + TypeScript + Vite
+# 🤖 AI Chat Widget
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 <script setup> SFCs, check out the script setup docs to learn more.
-Recommended IDE Setup
+Независимый AI Chat Widget, разработанный на Vue 3.
 
-    VS Code + Volar (and disable Vetur) + TypeScript Vue Plugin (Volar).
+Реализован как Web Component и может быть встроен в любые веб-приложения без зависимости от их архитектуры.
 
-Type Support For .vue Imports in TS
+---
 
-TypeScript cannot handle type information for .vue imports by default, so we replace the tsc CLI with vue-tsc for type checking. In editors, we need TypeScript Vue Plugin (Volar) to make the TypeScript language service aware of .vue types.
+## ✨ Возможности
 
-If the standalone TypeScript plugin doesn't feel fast enough to you, Volar has also implemented a Take Over Mode that is more performant. You can enable it by the following steps:
+* 📦 Web Component (`<ai-chat-widget>`)
+* ⚡ UMD сборка через Vite
+* 🔐 Передача токена авторизации
+* 🔄 Ленивая загрузка
+* 🛡️ Защита от повторной регистрации
+* 🧩 Встраивание в любые веб-системы
+* 🧠 Обработка ошибок загрузки
+* 🔌 Полная изоляция от host-приложения
 
-    Disable the built-in TypeScript Extension
-        Run Extensions: Show Built-in Extensions from VSCode's command palette
-        Find TypeScript and JavaScript Language Features, right click and select Disable (Workspace)
-    Reload the VSCode window by running Developer: Reload Window from the command palette.
+---
 
-Что бы внедрить в CRM
-📦 Widget loader
+## 🧪 UI (Mock)
 
-// src/plugins/widgetLoader.js
-export default function loadWidget(jsHref) {
-  // Если уже зарегистрирован — ничего не делаем
-  if (customElements.get('ai-chat-widget')) return Promise.resolve(false);
+### 💬 Виджет чата
 
-  return new Promise((resolve) => {
-    const script = document.createElement('script');
-    script.src = jsHref;
-    script.async = true;
+```text id="mock1"
+┌──────────────────────────────┐
+│ 🤖 AI Assistant              │
+├──────────────────────────────┤
+│ 👤 Привет                    │
+│ 🤖 Привет! Чем могу помочь? │
+│                              │
+│ 👤 Напиши код Vue компонента │
+│ 🤖 Вот пример:              │
+│   <template>                │
+│     <div>Hello</div>        │
+│   </template>               │
+│                              │
+├──────────────────────────────┤
+│ [ Написать сообщение... ] ➤  │
+└──────────────────────────────┘
+```
 
-    script.onload = () => resolve(true);
-    script.onerror = () => {
-      resolve(false);
-    };
+---
 
-    document.head.appendChild(script);
-  });
-}
+## 📦 Интеграция
 
-// src/main.js
+### 🌐 Любое HTML-приложение
 
-import loadWidget from '@/plugins/widjetLoader.js';
+```html id="html1"
+<script src="/widget/ai-chat-widget.umd.js"></script>
 
-async function initApp() {
-try {
-    // запускаем Vue-приложение
-    new Vue({
-      router,
-      store,
-      async created() {
-        const error = new URLSearchParams(window.location.search)?.get('error');
-        const token = localStorage.getItem('token')
-          || sessionStorage.getItem('token')
-          || new URLSearchParams(window.location.search)?.get('token');
-        const role = localStorage.getItem('role') || sessionStorage.getItem('role');
-        const login = localStorage.getItem('login') || sessionStorage.getItem('login');
-
-        if (token && role && login) {
-          this.$store.commit(this.$types.TOKEN_SET, token);
-          this.$store.commit(this.$types.ROLE_SET, role);
-          this.$store.commit(this.$types.LOGIN_SET, login);
-
-          createApi(token);
-          try {
-            await this.$store.dispatch(this.$types.USER_FETCH);
-          } catch (err) {
-            this.$store.dispatch(this.$types.LOGOUT);
-            console.warn(err);
-          }
-          return;
-        }
-
-        if (error || (token && !role && !login)) return;
-        this.$store.dispatch(this.$types.LOGOUT);
-      },
-      render: (h) => h(App),
-    }).$mount('#app');
-    // загружаем виджет
-    await loadWidget('/widget/ai-chat-widget.umd.js');
-
-} catch (err) {
-  console.error('Ошибка загрузки виджета:', err);
-  }
-}
-
-// запускаем
-initApp();
-
-## app.vue
-
-<ai-chat-widget></ai-chat-widget>
-
-
-## прокидываение пропса
-
-## entery.vue
-
-defineProps({
-  apiToken: String,
-})
-
-## туда откуда вызывается виджет
-
-// вариаент если например index.html
-<ai-chat-widget id="chat-widget"></ai-chat-widget>
-
-const widget = document.getElementById('chat-widget')
-rus = 'rrrrrr11111111111111111111'
-widget.apiToken = rus
-
-<ai-chat-widget v-if="isLogged && widgetLoaded" id="ai-chat-widget"></ai-chat-widget>
-
-## crm
-data() {
-  return {
-    widgetLoaded: false,
-  };
-},
-mounted() {
-  this.setFavicon();
-  customElements.whenDefined('ai-chat-widget')
-    .then(() => {
-      this.widgetLoaded = true;
-
-      if (this.isLogged) {
-        this.getAiToken(this.isLogged);
-      }
-    })
-    .catch(() => console.warn('ai-chat-widget не был загружен'));
-},
-methods: {
-  getAiToken(token) {
-    // ID нашего виджета в DOM
-    const widgetId = 'ai-chat-widget';
-
-    // Вспомогательная функция, которая пытается установить токен
-    const setToken = () => {
-      const el = document.getElementById(widgetId);
-      if (!el) return false; // если элемент ещё не в DOM — выходим
-      el.apiToken = token || ''; // присваиваем токен (или очищаем, если пустой)
-      return true; // сигнализируем, что установка прошла успешно
-    };
-
-    // Если виджет уже есть — токен установится сразу
-    // Если виджет ещё не определён (например, рендерится по v-if),
-    // ждём, пока custom element будет зарегистрирован, и повторяем установку
-    if (!setToken()) {
-      customElements.whenDefined(widgetId).then(() => setToken());
-    }
-  },
-},
-
-watch: {
-  isLogged: {
-    immediate: true,
-    handler(newToken) {
-      this.getAiToken(newToken);
-    },
-  },
-},
-
-Что бы внедрить в Doctor
-📦 Widget loader
-plungins ai-chat-widget.js
-
-export default async () => {
-  const widgetUrl = '/widget/ai-chat-widget.umd.js';
-
-  try {
-    // если уже зарегистрирован — выходим
-    if (customElements.get('ai-chat-widget')) return;
-
-    await new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = widgetUrl;
-      script.async = true;
-
-      script.onload = () => {
-        window.dispatchEvent(new CustomEvent('ai-widget-loaded'));
-        resolve();
-      };
-
-      script.onerror = () => {
-        console.warn(`[AI Widget] Не удалось загрузить скрипт: ${widgetUrl}`);
-        // удаляем неудачный тег, чтобы не оставлять мусор
-        script.remove();
-        resolve(); // не reject — чтобы не ломать всё приложение
-      };
-
-      document.head.appendChild(script);
-    });
-  } catch (error) {
-    console.error('[AI Widget] Ошибка при инициализации:', error);
-    // даже при ошибке не падаем — просто выходим
-  }
-};
-
-
-### nuxt config
-{ src: '~/plugins/ai-chat-widget.js', ssr: false }
-
-### сам плагин если файлом закидываем в static/widget
-
-### вывод в default layout
 <ai-chat-widget
   id="ai-chat-widget"
-  :api-token="apiToken"
-  :api-url="apiUrl"
+  api-token="YOUR_TOKEN"
 ></ai-chat-widget>
+```
 
-apiToken() {
-  const token = this.$auth.strategy.token.get();
-  const removeBearerToken = token.replace('Bearer ', '');
-  return removeBearerToken;
-},
-apiUrl() {
-  const url = `${this.$coreApi.baseURL}/`;
-  return url;
+---
+
+### ⚡ Vue / SPA приложения
+
+```javascript id="vue1"
+import loadWidget from '@/plugins/widgetLoader';
+
+await loadWidget('/widget/ai-chat-widget.umd.js');
+
+customElements.whenDefined('ai-chat-widget')
+  .then(() => {
+    console.log('Widget loaded');
+  });
+```
+
+---
+
+### 🧩 Nuxt (client-side)
+
+```javascript id="nuxt1"
+export default {
+  src: '~/plugins/ai-chat-widget.js',
+  ssr: false
 }
+```
+
+---
+
+### 🔐 Передача токена
+
+```javascript id="token1"
+const widget = document.getElementById('ai-chat-widget');
+
+widget.apiToken = 'JWT_TOKEN_HERE';
+```
+
+---
+
+## 🏗️ Архитектура
+
+```text id="arch1"
+Any Web Application
+        │
+        ▼
+loadWidget()
+        │
+        ▼
+ai-chat-widget.umd.js
+        │
+        ▼
+<ai-chat-widget>
+        │
+        ▼
+Vue 3 Widget
+        │
+        ▼
+API Layer
+```
+
+---
+
+## 🎯 Сценарии использования
+
+* корпоративные системы
+* CRM и админ-панели
+* SaaS платформы
+* личные кабинеты пользователей
+* внутренние сервисы компаний
+* любые Vue / Nuxt / JS приложения
+
+---
+
+## ⚙️ Технологии
+
+| Tech            | Purpose      |
+| --------------- | ------------ |
+| Vue 3           | UI           |
+| TypeScript      | Typing       |
+| Vite            | Build        |
+| Web Components  | Isolation    |
+| Custom Elements | Registration |
+| UMD             | Distribution |
+
+---
+
+## 📸 Превью
+
+### Widget UI
+
+![Widget](./screenshots/widget.png)
+
+### Integration example
+
+![Integration](./screenshots/integration.png)
+
+---
+
+## 🚀 Итог
+
+Проект представляет собой независимый AI-виджет, который может быть встроен в любую веб-экосистему без изменения её архитектуры.
